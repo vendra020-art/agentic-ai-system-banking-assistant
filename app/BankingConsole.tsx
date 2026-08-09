@@ -108,7 +108,7 @@ export default function BankingConsole() {
     <main>
       <nav className="topbar" aria-label="Primary navigation">
         <a className="brand" href="#top" aria-label="Aegis Bank AI home"><span className="brand-mark" aria-hidden="true">A</span><span>Aegis <b>Bank AI</b></span></a>
-        <div className="nav-links"><a href="#demo">Live demo</a><a href="#evolution">Architecture</a><a href="#trust">Trust model</a><a className="github-link" href="https://github.com/vendra020-art/secure-multi-agent-banking-assistant" target="_blank" rel="noreferrer">View repository ↗</a></div>
+        <div className="nav-links"><a href="#demo">Live demo</a><a href="#evolution">Architecture</a><a href="#trust">Trust model</a><a className="github-link" href="https://github.com/vendra020-art/agentic-ai-system-banking-assistant" target="_blank" rel="noreferrer">View repository ↗</a></div>
       </nav>
 
       <section className="hero" id="top">
