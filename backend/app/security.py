@@ -24,7 +24,7 @@ def redact_pii(text: str) -> tuple[str, list[str]]:
     return redacted, findings
 
 
-def authenticate(authorization: str = Header(default="Bearer mock-demo-token")) -> Principal:
+def authenticate(authorization: str = Header()) -> Principal:
     if authorization != "Bearer mock-demo-token":
         raise HTTPException(status_code=401, detail="Invalid mock identity token")
     return Principal(subject="demo-user", customer_id="CUST-1042", scopes={"accounts:read", "transactions:read", "service:write"})

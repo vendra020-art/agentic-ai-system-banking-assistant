@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:
@@ -9,16 +12,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Reject common committed secret formats
+        shell: bash
+        run: |
+          if git grep -nI -E '(ghp_|github_pat_|sk-|xox[baprs]-|AKIA)[A-Za-z0-9_-]{12,}' -- .; then
+            echo "Potential credential found in tracked source."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -r backend/requirements.txt
+      - run: pip install pip-audit==2.10.1
+      - run: python -m pip_audit -r backend/requirements.txt
       - run: pytest backend/tests
       - run: python evals/evaluate.py

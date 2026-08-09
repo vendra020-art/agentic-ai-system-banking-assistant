@@ -21,9 +21,13 @@ test("renders the Aegis banking assistant experience", async () => {
 });
 
 test("publishes mock-first and safety disclosures", async () => {
-  const html = await (await render()).text();
+  const response = await render();
+  const html = await response.text();
   assert.match(html, /Synthetic data/);
   assert.match(html, /No external LLM/);
   assert.match(html, /PII redaction test/);
   assert.match(html, /Demo only/);
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.match(response.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
 });

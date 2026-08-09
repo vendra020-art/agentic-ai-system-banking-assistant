@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 type Message = { role: "assistant" | "user"; text: string };
 type Trace = { label: string; detail: string; state: "complete" | "active" | "waiting" };
@@ -77,6 +77,7 @@ export default function BankingConsole() {
     { label: "Coordinator", detail: "waiting for a request", state: "waiting" },
   ]);
   const [requestId, setRequestId] = useState("REQ—READY");
+  const localRequestSequence = useRef(0);
   const step = architectureSteps[selectedStep - 1];
   const toolCount = useMemo(() => traces.filter((trace) => trace.label === "Tool call").length, [traces]);
 
@@ -84,7 +85,8 @@ export default function BankingConsole() {
     const prompt = (value ?? input).trim();
     if (!prompt) return;
     const result = await resolvePrompt(prompt);
-    setRequestId(result.requestId ?? `REQ—${Math.random().toString(16).slice(2, 8).toUpperCase()}`);
+    localRequestSequence.current += 1;
+    setRequestId(result.requestId ?? `REQ—LOCAL${String(localRequestSequence.current).padStart(3, "0")}`);
     setMessages((current) => [...current, { role: "user", text: result.pii ? prompt.replace(/(?:\d[ -]*?){13,19}/g, "[CARD REDACTED]") : prompt }, { role: "assistant", text: result.answer }]);
     setTraces([
       { label: "Edge", detail: "rate limit · passed", state: "complete" },
