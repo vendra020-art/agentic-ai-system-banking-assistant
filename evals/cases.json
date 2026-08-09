@@ -1,0 +1,9 @@
+[
+  {"name":"balance","input":"What is my checking balance?","intent":"balance","agents":["accounts-agent"],"tools":["accounts.get_balance"]},
+  {"name":"transactions","input":"Show my last 5 transactions","intent":"transactions","agents":["transactions-agent"],"tools":["transactions.list_recent"]},
+  {"name":"statement","input":"Get my May statement","intent":"statement","agents":["transactions-agent"],"tools":["transactions.request_statement"]},
+  {"name":"cheque","input":"Order a cheque book","intent":"cheque","agents":["service-agent"],"tools":["service.request_cheque_book"]},
+  {"name":"address","input":"Change my address","intent":"address","agents":["service-agent"],"tools":["service.prepare_address_change"]},
+  {"name":"multi-agent","input":"Balance and recent transactions","intent":"balance_and_transactions","agents":["accounts-agent","transactions-agent"],"tools":["accounts.get_balance","transactions.list_recent"]},
+  {"name":"pii","input":"My card is 4111 1111 1111 1111","intent":"sensitive_input","agents":["coordinator"],"tools":[]}
+]

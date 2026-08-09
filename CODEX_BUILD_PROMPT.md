@@ -1,0 +1,3 @@
+# Follow-up prompt for Codex
+
+Review Aegis Bank AI as a Senior Software Engineer / AI Engineer interview project. Preserve the mock-first contract, all fourteen architecture steps, the three bounded domain agents, the local MCP-style HTTP services, PII-before-routing invariant, deterministic default LLM, and explicit simulated-write behavior. Run the frontend build, backend tests and evaluation suite. Improve only issues supported by failing checks or concrete accessibility, security, reliability or documentation evidence. Do not connect to an external bank, identity provider, telemetry vendor or LLM.
