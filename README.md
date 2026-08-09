@@ -2,7 +2,11 @@
 
 > A secure, mock-first multi-agent banking assistant reference implementation.
 
-![Aegis Bank AI chatbot and execution trace](docs/images/chatbot-ui.png)
+[![Aegis Bank AI demo: chat, execution trace, architecture and trust model](docs/media/aegis-demo.gif)](docs/media/aegis-demo.mp4)
+
+**[Watch the 12-second MP4 demo](docs/media/aegis-demo.mp4)** · [Open the live demo](https://aegis-bank-ai.vendra020.chatgpt.site/#demo)
+
+The animated preview shows a safe multi-agent request, its execution trace, the fourteen-step architecture explorer and the mock-first trust model. Select it to open the full video file.
 
 [Architecture evolution](docs/ARCHITECTURE_EVOLUTION.md) · [Security model](docs/SECURITY.md) · [API contract](docs/API.md) · [5-minute demo](docs/DEMO.md)
 
@@ -29,6 +33,201 @@ flowchart LR
   C --> SESS[Session store]
   C --> OBS[Trace + synthetic cost]
   C --> LLM[Deterministic mock LLM]
+```
+
+## Architecture evolution: step-by-step flows
+
+Each step adds one boundary or control in response to a limitation in the previous design. Select a heading to open the corresponding design note.
+
+### 01 — [Simple demo](architecture/step-01.md)
+
+One client, endpoint and agent prove the interaction before responsibilities are distributed.
+
+```mermaid
+flowchart LR
+  USER[User] --> UI[React chat]
+  UI --> API[Assistant API]
+  API --> AGENT[Single agent]
+  AGENT --> MODEL[Deterministic model adapter]
+  MODEL --> UI
+```
+
+### 02 — [Bank APIs as tools](architecture/step-02.md)
+
+Typed operations ground answers in explicit capabilities instead of generated claims.
+
+```mermaid
+flowchart LR
+  AGENT[Agent] --> CATALOG[Typed tool catalog]
+  CATALOG --> BAL[Get balance]
+  CATALOG --> TXN[List transactions]
+  CATALOG --> STMT[Get statement]
+  CATALOG --> SVC[Service request]
+  BAL & TXN & STMT & SVC --> DATA[Synthetic bank data]
+```
+
+### 03 — [Domain agents](architecture/step-03.md)
+
+The growing tool catalog is divided into bounded domains with smaller policy surfaces.
+
+```mermaid
+flowchart LR
+  REQUEST[User request] --> ROUTER[Intent router]
+  ROUTER --> AA[Accounts agent]
+  ROUTER --> TA[Transactions agent]
+  ROUTER --> SA[Service agent]
+  AA --> AT[Account tools]
+  TA --> TT[Transaction tools]
+  SA --> ST[Service tools]
+```
+
+### 04 — [Coordinator](architecture/step-04.md)
+
+A deterministic planner handles cross-domain requests and runs independent reads concurrently.
+
+```mermaid
+flowchart LR
+  REQUEST[User request] --> PLAN[Coordinator plan]
+  PLAN -->|parallel| AA[Accounts agent]
+  PLAN -->|parallel| TA[Transactions agent]
+  PLAN -->|when needed| SA[Service agent]
+  AA & TA & SA --> JOIN[Aggregate results]
+  JOIN --> RESPONSE[Policy-filtered response]
+```
+
+### 05 — [MCP service layer](architecture/step-05.md)
+
+Each domain moves behind an isolated, typed HTTP boundary with explicit timeouts and errors.
+
+```mermaid
+flowchart LR
+  AGENTS[Domain agents] --> CLIENTS[Typed HTTP clients]
+  CLIENTS -->|correlation ID| AMCP[Accounts MCP service]
+  CLIENTS -->|correlation ID| TMCP[Transactions MCP service]
+  CLIENTS -->|correlation ID| SMCP[Service MCP service]
+  AMCP & TMCP & SMCP --> STORE[Synthetic stores]
+```
+
+### 06 — [Authentication](architecture/step-06.md)
+
+Every request must establish a synthetic identity before orchestration begins.
+
+```mermaid
+flowchart LR
+  REQUEST[API request] --> HEADER[Bearer token]
+  HEADER --> AUTH[Authentication dependency]
+  AUTH -->|valid| PRINCIPAL[Synthetic principal]
+  AUTH -->|missing or invalid| REJECT[401 response]
+  PRINCIPAL --> COORD[Coordinator]
+```
+
+### 07 — [Authorization](architecture/step-07.md)
+
+Identity scopes are checked immediately before each capability is invoked.
+
+```mermaid
+flowchart LR
+  PRINCIPAL[Principal scopes] --> POLICY[Policy check]
+  INTENT[Planned capability] --> POLICY
+  POLICY -->|allowed| AGENT[Domain agent]
+  POLICY -->|denied| STOP[403 without tool call]
+  AGENT --> TOOL[Authorized tool]
+```
+
+### 08 — [Session management](architecture/step-08.md)
+
+Bounded, per-session memory enables follow-up turns without mixing customer context.
+
+```mermaid
+flowchart LR
+  TURN[New turn + session ID] --> LOAD[Load bounded history]
+  LOAD --> CONTEXT[Isolated context]
+  CONTEXT --> COORD[Coordinator]
+  COORD --> RESULT[Agent results]
+  RESULT --> APPEND[Append sanitized turn]
+  APPEND --> SESSION[In-memory session store]
+```
+
+### 09 — [LLM abstraction](architecture/step-09.md)
+
+A provider interface keeps model choice out of agents and preserves a network-free default.
+
+```mermaid
+flowchart LR
+  COORD[Coordinator and agents] --> PORT[LLM provider interface]
+  PORT --> MOCK[Deterministic mock provider]
+  PORT -. production extension .-> REAL[External provider adapter]
+  MOCK --> RESPONSE[Generated response]
+  REAL -. disabled by default .-> RESPONSE
+```
+
+### 10 — [PII redaction](architecture/step-10.md)
+
+Sensitive patterns are replaced before planning, tracing or model use.
+
+```mermaid
+flowchart LR
+  INPUT[Raw user input] --> SCAN[PII pattern scan]
+  SCAN -->|card, SSN or email| REDACT[Replace sensitive values]
+  SCAN -->|no match| CLEAN[Approved text]
+  REDACT --> CLEAN
+  CLEAN --> PLAN[Planner and model boundary]
+  CLEAN --> TRACE[Sanitized trace]
+```
+
+### 11 — [Agent evaluation](architecture/step-11.md)
+
+Executable cases make routing, tool selection and safety behavior reviewable.
+
+```mermaid
+flowchart LR
+  CASE[Evaluation case] --> SYSTEM[Coordinator + agents]
+  SYSTEM --> OBSERVED[Observed plan, tools and answer]
+  EXPECTED[Expected behavior] --> COMPARE[Assertions]
+  OBSERVED --> COMPARE
+  COMPARE -->|match| PASS[Pass]
+  COMPARE -->|regression| FAIL[Fail CI]
+```
+
+### 12 — [Observability](architecture/step-12.md)
+
+Sanitized stages explain what happened without exposing raw customer input.
+
+```mermaid
+flowchart LR
+  REQUEST[Correlated request] --> STAGES[Edge → auth → PII → plan → tools]
+  STAGES --> EVENTS[Stage, outcome, detail and duration]
+  EVENTS --> TRACE[Sanitized execution trace]
+  TRACE --> RESPONSE[Client response]
+  TRACE --> OPS[Operational diagnosis]
+```
+
+### 13 — [Cost tracking](architecture/step-13.md)
+
+Synthetic attribution makes economic tradeoffs visible before a paid provider is introduced.
+
+```mermaid
+flowchart LR
+  PLAN[Execution plan] --> USAGE[Agent and tool usage]
+  USAGE --> ESTIMATE[Synthetic cost estimate]
+  ESTIMATE --> TRACE[Request trace]
+  ESTIMATE --> BUDGET[Budget policy input]
+  TRACE --> RESPONSE[Response metadata]
+```
+
+### 14 — [Edge security](architecture/step-14.md)
+
+The final layer rejects abuse before expensive or sensitive processing begins.
+
+```mermaid
+flowchart LR
+  INTERNET[Client traffic] --> EDGE[Gateway / WAF boundary]
+  EDGE --> RATE[Rate limit]
+  RATE -->|allowed| API[Assistant API]
+  RATE -->|exceeded| REJECT[429 response]
+  API --> AUTH[Authentication]
+  AUTH --> PII[PII guard]
+  PII --> COORD[Coordinator]
 ```
 
 ## What is real and what is mocked
